@@ -45,8 +45,8 @@ void str_uppercase(char *str)
    }// End of while
 }// End of str_uppercase
 
-int main(void) {
-
+int main(void)
+{
    configure_log();
 
    // Load current alerts
@@ -62,14 +62,14 @@ int main(void) {
 
    WINDOW *win = newwin(winrows, wincols, 0, 0);
    scrollok(win, true);
-   wborder(win, '|', '|', '-', '-', '+', '+', '+', '+');
 
    keypad(win, true);
    refresh();
 
    char tm[17];
    int x = 0;
-   while (x < alerts->count) {
+   while (x < alerts->count)
+   {
       wclear(win);
 
       Alert *alert = &alerts->alerts[x];
@@ -114,16 +114,16 @@ int main(void) {
       if (ch == KEY_LEFT || ch == KEY_UP || ch == KEY_BACKSPACE || ch == KEY_DC)
       {
          if (x > 0) --x;
-      }
+      }// End of if
       else if (ch == KEY_RIGHT || ch == KEY_DOWN || ch == '\n')
       {
          if (x < alerts->count - 1) ++x;
-      }
+      }// End of else if
       else if (ch == 'q' || ch == 'x')
       {
          break;
-      }
-   }
+      }// End of else if
+   }// End of while
 
    clrtoeol();
    refresh();
@@ -131,6 +131,5 @@ int main(void) {
    endwin();
 
    free_alerts(alerts);
-
    close_log();
-}
+}// End of main method
