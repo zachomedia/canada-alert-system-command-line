@@ -1,7 +1,7 @@
 CC := gcc
 C_FILES := $(wildcard src/*.c)
 OBJ_FILES := $(addprefix obj/,$(notdir $(C_FILES:.c=.o)))
-LD_FLAGS := -lm -L/usr/local/lib -lncurses -lzlog
+LD_FLAGS := -lm -L/usr/local/lib -lncurses -lzlog -lcurl
 CC_FLAGS := -Wall -g -I/usr/local/include
 
 bin/alerts: $(OBJ_FILES)

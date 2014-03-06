@@ -25,6 +25,8 @@
 #include "json.h"
 #include "alert.h"
 
+#include <stdio.h>
+
 #ifndef _ALERTS
 #define _ALERTS
 
@@ -42,11 +44,21 @@ typedef struct Alerts Alerts;
 Alerts * load_alerts_from_json(json_value *json);
 
 /*
-   load_alerts_from_json_file(path) Loads alerts from a JSON file.
-      PRE:  Valid file path pointer, and existing (and readable) file.
+   load_alerts_from_json_file(file) Loads alerts from a JSON file.
+      PRE:  Valid file pointer.
       POST: Alerts are read from the JSON file, and an Alerts object is returned.
 */
-Alerts * load_alerts_from_json_file(const char *file_path);
+Alerts * load_alerts_from_json_file(FILE *file);
+
+/*
+   load_alerts_from_http_json_file(url) Loads alerts by performing an HTTP request
+                                          for the JSON file at url.
+      PRE:  Valid url string (valid pointer and NULL terminated)
+      POST: HTTP request made and JSON read, and an Alerts object is returned.
+
+   CURL Code adapted from http://stackoverflow.com/questions/1636333/download-file-using-libcurl-in-c-c
+*/
+Alerts * load_alerts_from_http_json_file(const char *url);
 
 /*
    free_alerts(alerts) Frees the alerts object.

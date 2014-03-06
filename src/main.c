@@ -50,7 +50,7 @@ int main(void) {
    configure_log();
 
    // Load current alerts
-   Alerts *alerts = load_alerts_from_json_file("/Users/zachary/Documents/alerts.json");
+   Alerts *alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/alerts.json");
 
    // Setup ncurses
    initscr();
@@ -67,6 +67,7 @@ int main(void) {
    keypad(win, true);
    refresh();
 
+   char tm[17];
    int x = 0;
    while (x < alerts->count) {
       wclear(win);
@@ -85,9 +86,23 @@ int main(void) {
       wprintw(win, "%s\n", headline);
       wattroff(win, COLOR_PAIR(1));
 
+      wprintw(win, "Issued by ");
       wattron(win, A_BOLD);
-      wprintw(win, "Issued by %s on %s. Expires %s.\n\n", alert->issuer, alert->effective, alert->expires);
+      wprintw(win, "%s", alert->issuer);
       wattroff(win, A_BOLD);
+
+      wprintw(win, " on ");
+      wattron(win, A_BOLD);
+      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%H", &alert->effective);
+      wprintw(win, "%s", tm);
+      wattroff(win, A_BOLD);
+
+      wprintw(win, ". Effective until ");
+      wattron(win, A_BOLD);
+      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%H", &alert->expires);
+      wprintw(win, "%s", tm);
+      wattroff(win, A_BOLD);
+      wprintw(win, ".\n\n");
 
       wprintw(win, "%s\n\n", alert->description);
 

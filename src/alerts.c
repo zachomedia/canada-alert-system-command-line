@@ -26,36 +26,28 @@
 
 #include "log.h"
 
-#include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <curl/curl.h>
 
 #define JSON_FILE_CONTENTS_BUFFER_LENGTH 0xFFFFFF
 
-static char * format_time(const char *str)
+/*
+   parse_time(str, time) Parses the time string and places the corresponding
+                           struct tm in tm.
+      PRE:  Valid str, time pointers.
+      POST: time is updated with the time specified in str.
+*/
+static void parse_time(const char *str, struct tm *tm)
 {
    zlog_debug(alog, "Entering");
 
-   if (!str) return NULL;
+   if (!str || !tm) return;
 
-   // ####-##-## ##:##
-   char *str_time = calloc(17, sizeof(char));
-
-   if (!str_time) return NULL;
-
-   struct tm tm;
    // 2014-02-26T15:41:00-05:00
-   char *res = strptime(str, "%Y-%m-%dT%H:%M:%S", &tm);
-
-   if (!res)
-   {
-      zlog_warn(alog, "Date parse error");
-      return NULL;
-   }// End of if
-   strftime(str_time, 16, "%F %R", &tm);
+   strptime(str, "%Y-%m-%dT%H:%M:%S", tm);
 
    zlog_debug(alog, "Exiting");
-   return str_time;
 }// End of format_time
 
 // IMPLEMENTATION: See header for details
@@ -117,51 +109,28 @@ Alerts * load_alerts_from_json(json_value *json)
    // Get the alerts
    for (int i = 0; i < json->u.array.length && index < count; ++i)
    {
-      json_value *alert = json->u.array.values[i];
-      if (!alert) continue;
+      json_value *js_alert = json->u.array.values[i];
+      if (!js_alert) continue;
 
-      json_value *information = json_object_value(alert, "Information");
-      if (!information) continue;
+      json_value *js_information = json_object_value(js_alert, "Information");
+      if (!js_information) continue;
 
-      for (int ii = 0; ii < information->u.array.length && index < count; ++ii)
+      for (int ii = 0; ii < js_information->u.array.length && index < count; ++ii)
       {
-         json_value *info = information->u.array.values[ii];
-         if (!info) continue;
+         Alert *alert = &alerts->alerts[index];
 
-         json_value *language = json_object_value(info, "Language");
-         if (!language || strcmp(language->u.string.ptr, "fr-CA") == 0) continue;
+         json_value *js_info = js_information->u.array.values[ii];
+         if (!js_info) continue;
 
-         alerts->alerts[index].headline = json_string_or_default(info, "Headline", "");
-         alerts->alerts[index].description = json_string_or_default(info, "Description", "");
-         alerts->alerts[index].issuer = json_string_or_default(info, "SenderName", "");
+         json_value *js_language = json_object_value(js_info, "Language");
+         if (!js_language || strcmp(js_language->u.string.ptr, "fr-CA") == 0) continue;
 
-         char *effective = json_string_or_default(info, "Effective", "");
-         char *tm_effective = format_time(effective);
+         alert->headline = json_string_or_default(js_info, "Headline", "");
+         alert->description = json_string_or_default(js_info, "Description", "");
+         alert->issuer = json_string_or_default(js_info, "SenderName", "");
 
-         if (tm_effective)
-         {
-            free(effective);
-            effective = NULL;
-            alerts->alerts[index].effective = tm_effective;
-         }// End of if
-         else
-         {
-            alerts->alerts[index].effective = effective;
-         }// End of else
-
-         char *expires = json_string_or_default(info, "Expires", "");
-         char *tm_expires = format_time(expires);
-
-         if (tm_expires)
-         {
-            free(expires);
-            expires = NULL;
-            alerts->alerts[index].expires = tm_expires;
-         }// End of if
-         else
-         {
-            alerts->alerts[index].expires = expires;
-         }// End of else
+         parse_time(json_string_or_default(js_info, "Effective", ""), &alert->effective);
+         parse_time(json_string_or_default(js_info, "Expires", ""), &alert->expires);
 
          ++index;
       }// End of for (ii)
@@ -172,19 +141,17 @@ Alerts * load_alerts_from_json(json_value *json)
 }// End of load_alerts_from_json method
 
 // IMPLEMENTATION: See header for details
-Alerts * load_alerts_from_json_file(const char *file_path)
+Alerts * load_alerts_from_json_file(FILE *file)
 {
    zlog_debug(alog, "Entering");
 
-   if (!file_path)
+   if (!file)
    {
       zlog_warn(alog, "NULL file pointer provided");
       return NULL;
    }// End of if
 
-   // Declare and initialize variables
-   FILE *file = NULL;
-
+   // Declare and initalize variables
    char *contents = calloc(JSON_FILE_CONTENTS_BUFFER_LENGTH + 1, sizeof(char));
    Alerts * alerts = NULL;
 
@@ -196,23 +163,10 @@ Alerts * load_alerts_from_json_file(const char *file_path)
 
    json_value *json = NULL;
 
-
-   // Read the raw contents of the file
-   zlog_info(alog, "Opening JSON file \"%s\"", file_path);
-   file = fopen(file_path, "r");
-
-   if (!file)
-   {
-      zlog_warn(alog, "Failed to open file \"%s\"", file_path);
-      return NULL;
-   }// End of if
-
    // Read contents of the file
-   zlog_debug(alog, "Reading JSON file \"%s\"", file_path);
+   zlog_debug(alog, "Reading JSON file");
+   rewind(file);
    fgets(contents, JSON_FILE_CONTENTS_BUFFER_LENGTH, file);
-
-   // Close the file, it's no longer needed
-   fclose(file);
 
    // Parse the JSON
    zlog_info(alog, "Parsing JSON");
@@ -240,8 +194,83 @@ Alerts * load_alerts_from_json_file(const char *file_path)
    return alerts;
 }// End of load_alerts_from_json_file method
 
+/*
+   curl_write_response(ptr, size, nmemb, stream) Writes the response to stream.
+      PRE:  Valid pointers
+      POST: Response written to the stream.
+
+   // Adpated from: http://stackoverflow.com/questions/1636333/download-file-using-libcurl-in-c-c
+*/
+static size_t curl_write_response(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+   return fwrite(ptr, size, nmemb, stream);
+}
+
 // IMPLEMENTATION: See header for details
-void free_alerts(Alerts *alerts) {
+Alerts * load_alerts_from_http_json_file(const char *url)
+{
+   zlog_debug(alog, "Entering");
+
+   if (!url)
+   {
+      zlog_warn(alog, "NULL url provided");
+      return NULL;
+   }// End of if
+
+   // Declare and initalize variables
+   Alerts *alerts = NULL;
+
+   FILE *ftmp = tmpfile();
+   CURL *curl = curl_easy_init();
+   CURLcode res;
+
+   if (!ftmp)
+   {
+      zlog_warn(alog, "Failed to create temp file");
+      if (curl) curl_easy_cleanup(curl);
+      return NULL;
+   }// End of if
+
+   if (!curl)
+   {
+      zlog_warn(alog, "Failed to create curl object");
+      fclose(ftmp);
+      return NULL;
+   }// End of if
+
+   // Configure curl
+   zlog_debug(alog, "Configuring curl");
+   curl_easy_setopt(curl, CURLOPT_URL, url);
+   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_response);
+   curl_easy_setopt(curl, CURLOPT_WRITEDATA, ftmp);
+
+   zlog_info(alog, "Performing HTTP request");
+   res = curl_easy_perform(curl);
+   curl_easy_cleanup(curl);
+
+   if (res == CURLE_OK)
+   {
+      alerts = load_alerts_from_json_file(ftmp);
+   }// End of if
+   else
+   {
+      zlog_warn(alog, "HTTP request failed");
+   }// End of if
+
+   fclose(ftmp);
+
+   zlog_debug(alog, "Exiting");
+   return alerts;
+}// End of load_alerts_from_http_json_file method
+
+// IMPLEMENTATION: See header for details
+void free_alerts(Alerts *alerts)
+{
+   if (!alerts) return;
+
+   zlog_debug(alog, "Entering");
+
    free(alerts->alerts);
    free(alerts);
-}
+
+   zlog_debug(alog, "Exiting");
+}// End of free_alerts method

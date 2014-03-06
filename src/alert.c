@@ -22,26 +22,22 @@
    THE SOFTWARE.
 */
 
-#ifndef _ALERT
-#define _ALERT
+#include "alert.h"
 
-#include <time.h>
+#include <stdlib.h>
+#include "log.h"
 
-struct Alert {
-   char *headline;
-   char *description;
-   char *issuer;
+void free_alert(Alert *alert)
+{
+   if (!alert) return;
 
-   struct tm effective;
-   struct tm expires;
-};
-typedef struct Alert Alert;
+   zlog_debug(alog, "Entering");
 
-/*
-   free_alert(alert) Frees the memory allocted for the alert.
-      PRE:  Valid alert pointer
-      POST: Memory allocated for the alert and it's values is freed.
-*/
-void free_alert(Alert *alert);
+   free(alert->headline);
+   free(alert->description);
+   free(alert->issuer);
 
-#endif
+   free(alert);
+
+   zlog_debug(alog, "Exiting");
+}// End of free_alert method
