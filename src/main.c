@@ -93,13 +93,13 @@ int main(void)
 
       wprintw(win, " on ");
       wattron(win, A_BOLD);
-      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%H", &alert->effective);
+      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%M", &alert->effective);
       wprintw(win, "%s", tm);
       wattroff(win, A_BOLD);
 
       wprintw(win, ". Effective until ");
       wattron(win, A_BOLD);
-      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%H", &alert->expires);
+      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%M", &alert->expires);
       wprintw(win, "%s", tm);
       wattroff(win, A_BOLD);
       wprintw(win, ".\n\n");
