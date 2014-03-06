@@ -66,7 +66,7 @@ int main(void)
    keypad(win, true);
    refresh();
 
-   char tm[17];
+   char tm[18];
    int x = 0;
    while (x < alerts->count)
    {
