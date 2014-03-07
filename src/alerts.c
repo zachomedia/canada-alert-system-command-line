@@ -29,6 +29,7 @@
 #include <string.h>
 #include <time.h>
 #include <curl/curl.h>
+#include <stdbool.h>
 
 #define JSON_FILE_CONTENTS_BUFFER_LENGTH 0xFFFFFF
 
@@ -50,6 +51,42 @@ static void parse_time(const char *str, struct tm *tm)
    zlog_debug(alog, "Exiting");
 }// End of format_time
 
+/*
+   keep_alert(js_alert) Returns true if the alert should be kept.
+      PRE:  true
+      POST: true if the alert should be kept, false otherwise
+*/
+static bool keep_alert(json_value *js_alert)
+{
+   zlog_debug(alog, "Entering");
+
+   if (!js_alert) return false;
+
+   json_value *js_status = json_object_value(js_alert, "Status");
+   if (!js_status || strcmp(js_status->u.string.ptr, "Actual") != 0) return false;
+
+   zlog_debug(alog, "Exiting");
+   return true;
+}// End of keep_alert method
+
+/*
+   keep_alert_info(js_info) Returns true if the alert info should be kept.
+      PRE:  true
+      POST: true if the alert info should be kept, false otherwise
+*/
+static bool keep_alert_info(json_value *js_info)
+{
+   zlog_debug(alog, "Entering");
+
+   if (!js_info) return false;
+
+   json_value *js_language = json_object_value(js_info, "Language");
+   if (!js_language || strcmp(js_language->u.string.ptr, "fr-CA") == 0) return false;
+
+   zlog_debug(alog, "Exiting");
+   return true;
+}// End of keep_alert method
+
 // IMPLEMENTATION: See header for details
 Alerts * load_alerts_from_json(json_value *json)
 {
@@ -70,7 +107,7 @@ Alerts * load_alerts_from_json(json_value *json)
    for (int i = 0; i < json->u.array.length; ++i)
    {
       json_value *js_alert = json->u.array.values[i];
-      if (!js_alert) continue;
+      if (!keep_alert(js_alert)) continue;
 
       json_value *js_information = json_object_value(js_alert, "Information");
       if (!js_information) continue;
@@ -78,10 +115,7 @@ Alerts * load_alerts_from_json(json_value *json)
       for (int ii = 0; ii < js_information->u.array.length; ++ii)
       {
          json_value *js_info = js_information->u.array.values[ii];
-         if (!js_info) continue;
-
-         json_value *js_language = json_object_value(js_info, "Language");
-         if (!js_language || strcmp(js_language->u.string.ptr, "fr-CA") == 0) continue;
+         if (!keep_alert_info(js_info)) continue;
 
          ++count;
       }// End of for (ii)
@@ -110,18 +144,15 @@ Alerts * load_alerts_from_json(json_value *json)
    for (int i = 0; i < json->u.array.length && index < count; ++i)
    {
       json_value *js_alert = json->u.array.values[i];
-      if (!js_alert) continue;
+      if (!keep_alert(js_alert)) continue;
 
       json_value *js_information = json_object_value(js_alert, "Information");
       if (!js_information) continue;
 
-      for (int ii = 0; ii < js_information->u.array.length && index < count; ++ii)
+      for (int ii = 0; ii < js_information->u.array.length; ++ii)
       {
          json_value *js_info = js_information->u.array.values[ii];
-         if (!js_info) continue;
-
-         json_value *js_language = json_object_value(js_info, "Language");
-         if (!js_language || strcmp(js_language->u.string.ptr, "fr-CA") == 0) continue;
+         if (!keep_alert_info(js_info)) continue;
 
          Alert *alert = malloc(sizeof(Alert));
          alerts->alerts[index] = alert;
