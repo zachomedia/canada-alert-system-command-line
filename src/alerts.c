@@ -69,19 +69,19 @@ Alerts * load_alerts_from_json(json_value *json)
    // Get the number of alerts (Information objects)
    for (int i = 0; i < json->u.array.length; ++i)
    {
-      json_value *alert = json->u.array.values[i];
-      if (!alert) continue;
+      json_value *js_alert = json->u.array.values[i];
+      if (!js_alert) continue;
 
-      json_value *information = json_object_value(alert, "Information");
-      if (!information) continue;
+      json_value *js_information = json_object_value(js_alert, "Information");
+      if (!js_information) continue;
 
-      for (int ii = 0; ii < information->u.array.length; ++ii)
+      for (int ii = 0; ii < js_information->u.array.length; ++ii)
       {
-         json_value *info = information->u.array.values[ii];
-         if (!info) continue;
+         json_value *js_info = js_information->u.array.values[ii];
+         if (!js_info) continue;
 
-         json_value *language = json_object_value(info, "Language");
-         if (!language || strcmp(language->u.string.ptr, "fr-CA") == 0) continue;
+         json_value *js_language = json_object_value(js_info, "Language");
+         if (!js_language || strcmp(js_language->u.string.ptr, "fr-CA") == 0) continue;
 
          ++count;
       }// End of for (ii)
@@ -95,7 +95,7 @@ Alerts * load_alerts_from_json(json_value *json)
       return NULL;
    }// End of if
 
-   alerts->alerts = malloc(sizeof(Alert) * count);
+   alerts->alerts = malloc(sizeof(Alert *) * count);
 
    if (!alerts->alerts)
    {
@@ -117,22 +117,35 @@ Alerts * load_alerts_from_json(json_value *json)
 
       for (int ii = 0; ii < js_information->u.array.length && index < count; ++ii)
       {
-         Alert *alert = &alerts->alerts[index];
-
          json_value *js_info = js_information->u.array.values[ii];
          if (!js_info) continue;
 
          json_value *js_language = json_object_value(js_info, "Language");
          if (!js_language || strcmp(js_language->u.string.ptr, "fr-CA") == 0) continue;
 
+         Alert *alert = malloc(sizeof(Alert));
+         alerts->alerts[index] = alert;
+         ++index;
+
+         if (!alert)
+         {
+            zlog_warn(alog, "Failed to allocate memory for alert");
+            free_alerts(alerts);
+            return NULL;
+         }// End of if
+
          alert->headline = json_string_or_default(js_info, "Headline", "");
          alert->description = json_string_or_default(js_info, "Description", "");
          alert->issuer = json_string_or_default(js_info, "SenderName", "");
 
-         parse_time(json_string_or_default(js_info, "Effective", ""), &alert->effective);
-         parse_time(json_string_or_default(js_info, "Expires", ""), &alert->expires);
+         char *effective = json_string_or_default(js_info, "Effective", "");
+         char *expires = json_string_or_default(js_info, "Expires", "");
 
-         ++index;
+         parse_time(effective, &alert->effective);
+         parse_time(expires, &alert->expires);
+
+         free(effective);
+         free(expires);
       }// End of for (ii)
    }// End of for (i)
 
@@ -268,6 +281,11 @@ void free_alerts(Alerts *alerts)
    if (!alerts) return;
 
    zlog_debug(alog, "Entering");
+
+   for (int x = 0; x < alerts->count; ++x)
+   {
+      free_alert(alerts->alerts[x]);
+   }// End of for
 
    free(alerts->alerts);
    free(alerts);

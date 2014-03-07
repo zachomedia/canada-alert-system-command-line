@@ -32,7 +32,7 @@
 
 struct Alerts {
    int count;
-   Alert *alerts;
+   Alert **alerts;
 };
 typedef struct Alerts Alerts;
 

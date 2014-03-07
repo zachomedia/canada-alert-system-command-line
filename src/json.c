@@ -969,7 +969,8 @@ char * json_string_or_default(const json_value *json, const char *name, const ch
    }// End of if
    else
    {
-      val = calloc(1, sizeof(char));
+      val = calloc(strlen(def) + 1, sizeof(char));
+      snprintf(val, sizeof(val), "%s", def);
    }// End of else
 
    return val;

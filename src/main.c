@@ -32,7 +32,21 @@
 #include "log.h"
 #include "alerts.h"
 
-void str_uppercase(char *str)
+/* DEFINES */
+#define HEADLINE_COLOUR 1
+
+/* INSTANCE VARIABLES */
+static Alerts *alerts = NULL;
+static int active_alert = 0;
+
+static WINDOW *alert_window = NULL;
+static WINDOW *stats_window = NULL;
+static WINDOW *input_window = NULL;
+
+static int winrows = 0;
+static int wincols = 0;
+
+static void str_uppercase(char *str)
 {
    while (*str)
    {
@@ -45,89 +59,182 @@ void str_uppercase(char *str)
    }// End of while
 }// End of str_uppercase
 
+static void process_input(const int ch)
+{
+   if (!alerts) return;
+
+   zlog_debug(alog, "Entering");
+
+   switch (ch)
+   {
+      case KEY_LEFT:
+      case KEY_UP:
+      case KEY_BACKSPACE:
+      case KEY_DC:            if (active_alert > 0) --active_alert;
+                              break;
+
+      case KEY_RIGHT:
+      case KEY_DOWN:
+      case '\n':              if (active_alert < alerts->count - 1) ++active_alert;
+                              break;
+
+      case KEY_EXIT:
+      case 'q':
+      case 'Q':
+      case 'x':
+      case 'X':               active_alert = -1;
+                              break;
+   }// End of switch
+
+   zlog_debug(alog, "Exiting");
+}// End of process_input method
+
+static void configure_alert_window(void)
+{
+   zlog_debug(alog, "Entering");
+
+   if (!alert_window)
+   {
+      zlog_info(alog, "Setting up alert window");
+
+      alert_window = newwin(winrows - 1, wincols, 0, 0);
+      scrollok(alert_window, true);
+   }// End of window
+
+   // Declare variables
+   zlog_info(alog, "Showing alert #%d", active_alert);
+   Alert *alert = alerts->alerts[active_alert];
+
+   // Configure window
+   wclear(alert_window);
+
+   if (!alert)
+   {
+      zlog_warn(alog, "Error getting alert (NULL pointer)");
+      wprintw(alert_window, "SORRY! An error occured.\n");
+      wrefresh(alert_window);
+      return;
+   }// End of if
+
+   zlog_debug(alog, "Declaring and initalizing variables for output");
+   char headline[strlen(alert->headline) + 1];
+   char tm[18];
+
+   zlog_debug(alog, "Uppercasing headline");
+   snprintf(headline, sizeof(headline), "%s", alert->headline);
+   str_uppercase(headline);
+
+   zlog_debug(alog, "Printing headline");
+   wattron(alert_window, COLOR_PAIR(HEADLINE_COLOUR));
+   wprintw(alert_window, "%s\n", headline);
+   wattroff(alert_window, COLOR_PAIR(HEADLINE_COLOUR));
+
+   zlog_debug(alog, "Printing issuer");
+   wprintw(alert_window, "Issued by ");
+   wattron(alert_window, A_BOLD);
+   wprintw(alert_window, "%s", alert->issuer);
+   wattroff(alert_window, A_BOLD);
+
+   zlog_debug(alog, "Printing effective time");
+   wprintw(alert_window, " on ");
+   wattron(alert_window, A_BOLD);
+   strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%M", &alert->effective);
+   wprintw(alert_window, "%s", tm);
+   wattroff(alert_window, A_BOLD);
+
+   zlog_debug(alog, "Printing expires time");
+   wprintw(alert_window, ". Effective until ");
+   wattron(alert_window, A_BOLD);
+   strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%M", &alert->expires);
+   wprintw(alert_window, "%s", tm);
+   wattroff(alert_window, A_BOLD);
+   wprintw(alert_window, ".\n\n");
+
+   zlog_debug(alog, "Printing description");
+   wprintw(alert_window, "%s\n\n", alert->description);
+
+   wrefresh(alert_window);
+
+   zlog_debug(alog, "Exiting");
+}// End of configure_alert_window method
+
+static void configure_stats_window(void)
+{
+   zlog_debug(alog, "Entering");
+
+   if (!stats_window)
+   {
+      stats_window = newwin(1, wincols, winrows - 1, 0);
+   }// End of window
+
+   // Declare variables
+
+   // Configure window
+   wclear(stats_window);
+
+   wprintw(stats_window, "Canada Alert System | %d of %d", active_alert + 1, alerts->count);
+
+   wrefresh(stats_window);
+
+   zlog_debug(alog, "Exiting");
+}// End of configure_stats_window method
+
+static void configure_input_window(void)
+{
+   zlog_debug(alog, "Entering");
+
+   if (!input_window)
+   {
+      input_window = newwin(1, 1, winrows - 1, wincols - 1);
+      keypad(input_window, true);
+   }// End of window
+
+   // Declare variables
+   int ch = 0;
+
+   // Configure window
+   wclear(input_window);
+
+   ch = wgetch(input_window);
+   process_input(ch);
+
+   wrefresh(input_window);
+
+   zlog_debug(alog, "Exiting");
+}// End of configure_input_window method
+
+static void configure_windows(void)
+{
+   zlog_debug(alog, "Entering");
+
+   getmaxyx(stdscr, winrows, wincols);
+
+   configure_alert_window();
+   configure_stats_window();
+   configure_input_window();
+
+   zlog_debug(alog, "Exiting");
+}// End of configure_windows method
+
 int main(void)
 {
    configure_log();
 
    // Load current alerts
-   Alerts *alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/alerts.json");
+   alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/alerts.json");
 
    // Setup ncurses
    initscr();
    start_color();
-   init_pair(1, COLOR_BLACK, COLOR_RED);
+   init_pair(HEADLINE_COLOUR, COLOR_BLACK, COLOR_RED);
 
-   int wincols, winrows;
-   getmaxyx(stdscr, winrows, wincols);
-
-   WINDOW *win = newwin(winrows, wincols, 0, 0);
-   scrollok(win, true);
-
-   keypad(win, true);
    refresh();
 
-   char tm[18];
-   int x = 0;
-   while (x < alerts->count)
+   while (active_alert >= 0)
    {
-      wclear(win);
-
-      Alert *alert = &alerts->alerts[x];
-
-      wprintw(win, "*******************************************************\n");
-      wprintw(win, "*                 CANADA ALERT SYSTEM                 *\n");
-      wprintw(win, "*******************************************************\n\n\n");
-
-      wattron(win, COLOR_PAIR(1));
-
-      char *headline = alert->headline;
-      str_uppercase(headline);
-
-      wprintw(win, "%s\n", headline);
-      wattroff(win, COLOR_PAIR(1));
-
-      wprintw(win, "Issued by ");
-      wattron(win, A_BOLD);
-      wprintw(win, "%s", alert->issuer);
-      wattroff(win, A_BOLD);
-
-      wprintw(win, " on ");
-      wattron(win, A_BOLD);
-      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%M", &alert->effective);
-      wprintw(win, "%s", tm);
-      wattroff(win, A_BOLD);
-
-      wprintw(win, ". Effective until ");
-      wattron(win, A_BOLD);
-      strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%M", &alert->expires);
-      wprintw(win, "%s", tm);
-      wattroff(win, A_BOLD);
-      wprintw(win, ".\n\n");
-
-      wprintw(win, "%s\n\n", alert->description);
-
-      wprintw(win, "(%d of %d)\n", x + 1, alerts->count);
-
-      wrefresh(win);
-      int ch = wgetch(win);
-
-      if (ch == KEY_LEFT || ch == KEY_UP || ch == KEY_BACKSPACE || ch == KEY_DC)
-      {
-         if (x > 0) --x;
-      }// End of if
-      else if (ch == KEY_RIGHT || ch == KEY_DOWN || ch == '\n')
-      {
-         if (x < alerts->count - 1) ++x;
-      }// End of else if
-      else if (ch == 'q' || ch == 'x')
-      {
-         break;
-      }// End of else if
+      configure_windows();
    }// End of while
 
-   clrtoeol();
-   refresh();
-   wrefresh(win);
    endwin();
 
    free_alerts(alerts);
