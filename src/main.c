@@ -126,7 +126,7 @@ static void configure_alert_window(void)
 
    zlog_debug(alog, "Printing headline");
    wattron(alert_window, COLOR_PAIR(HEADLINE_COLOUR));
-   wprintw(alert_window, "%s\n", headline);
+   wprintw(alert_window, "*** %s ***\n", headline);
    wattroff(alert_window, COLOR_PAIR(HEADLINE_COLOUR));
 
    zlog_debug(alog, "Printing issuer");
