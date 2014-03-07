@@ -31,8 +31,6 @@
 #include <curl/curl.h>
 #include <stdbool.h>
 
-#define JSON_FILE_CONTENTS_BUFFER_LENGTH 0xFFFFFF
-
 /*
    parse_time(str, time) Parses the time string and places the corresponding
                            struct tm in tm.
@@ -196,8 +194,19 @@ Alerts * load_alerts_from_json_file(FILE *file)
    }// End of if
 
    // Declare and initalize variables
-   char *contents = calloc(JSON_FILE_CONTENTS_BUFFER_LENGTH + 1, sizeof(char));
+   int file_length = 0;
+   char *contents = NULL;
    Alerts * alerts = NULL;
+
+   json_value *json = NULL;
+
+   // Read contents of the file
+   zlog_debug(alog, "Reading JSON file");
+
+   fseek(file, 0, SEEK_END);
+   file_length = ftell(file);
+   contents = calloc(file_length + 1, sizeof(char));
+   zlog_debug(alog, "File size: %d bytes", file_length);
 
    if (!contents)
    {
@@ -205,16 +214,12 @@ Alerts * load_alerts_from_json_file(FILE *file)
       return NULL;
    }// End of if
 
-   json_value *json = NULL;
-
-   // Read contents of the file
-   zlog_debug(alog, "Reading JSON file");
    rewind(file);
-   fgets(contents, JSON_FILE_CONTENTS_BUFFER_LENGTH, file);
+   fgets(contents, file_length, file);
 
    // Parse the JSON
    zlog_info(alog, "Parsing JSON");
-   json = json_parse(contents, JSON_FILE_CONTENTS_BUFFER_LENGTH);
+   json = json_parse(contents, file_length);
 
    if (!json)
    {
