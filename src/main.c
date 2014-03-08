@@ -111,16 +111,16 @@ static void configure_alert_window(void)
    if (!alert)
    {
       zlog_warn(alog, "Error getting alert (NULL pointer)");
-      wprintw(alert_window, "SORRY! An error occured.\n");
+      wprintw(alert_window, "SORRY! An error occurred.\n");
       wrefresh(alert_window);
       return;
    }// End of if
 
-   zlog_debug(alog, "Declaring and initalizing variables for output");
+   zlog_debug(alog, "Declaring and initializing variables for output");
    char headline[strlen(alert->headline) + 1];
    char tm[18];
 
-   zlog_debug(alog, "Uppercasing headline");
+   zlog_debug(alog, "Upper-casing headline");
    snprintf(headline, sizeof(headline), "%s", alert->headline);
    str_uppercase(headline);
 
@@ -223,7 +223,7 @@ int main(void)
    // Load current alerts
    alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/alerts.json");
 
-   // Setup ncurses
+   // Set up ncurses
    initscr();
    start_color();
    init_pair(HEADLINE_COLOUR, COLOR_BLACK, COLOR_RED);
