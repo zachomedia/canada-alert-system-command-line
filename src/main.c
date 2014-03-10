@@ -101,6 +101,8 @@ static void configure_alert_window(void)
       scrollok(alert_window, true);
    }// End of window
 
+   if (alerts->count == 0) return;
+
    // Declare variables
    zlog_info(alog, "Showing alert #%d", active_alert);
    Alert *alert = alerts->alerts[active_alert];
@@ -178,12 +180,23 @@ static void configure_stats_window(void)
       stats_window = newwin(1, wincols, winrows - 1, 0);
    }// End of window
 
+   if (!alerts) return;
+
    // Declare variables
 
    // Configure window
    wclear(stats_window);
 
-   wprintw(stats_window, "Canada Alert System | %d of %d", active_alert + 1, alerts->count);
+   wprintw(stats_window, "Canada Alert System");
+
+   if (alerts->count > 0)
+   {
+      wprintw(stats_window, " | %d of %d", active_alert + 1, alerts->count);
+   }// End of if
+   else
+   {
+      wprintw(stats_window, " | No active alerts");
+   }// End of else
 
    wrefresh(stats_window);
 
