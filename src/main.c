@@ -126,7 +126,7 @@ static void configure_alert_window(void)
 
    zlog_debug(alog, "Printing headline");
    wattron(alert_window, COLOR_PAIR(HEADLINE_COLOUR));
-   wprintw(alert_window, "*** %s ***\n", headline);
+   wprintw(alert_window, " *** %s *** \n", headline);
    wattroff(alert_window, COLOR_PAIR(HEADLINE_COLOUR));
 
    zlog_debug(alog, "Printing issuer");
@@ -150,8 +150,19 @@ static void configure_alert_window(void)
    wattroff(alert_window, A_BOLD);
    wprintw(alert_window, ".\n\n");
 
+   zlog_debug(alog, "Printing areas");
+   wprintw(alert_window, "For ");
+   for (int x = 0; x < alert->area_count; ++x)
+   {
+      if (x > 0) wprintw(alert_window, ", ");
+      wprintw(alert_window, "%s", alert->areas[x]->name);
+   }// End of for
+   wprintw(alert_window, ".\n\n");
+
    zlog_debug(alog, "Printing description");
+   wattron(alert_window, A_BOLD);
    wprintw(alert_window, "%s\n\n", alert->description);
+   wattroff(alert_window, A_BOLD);
 
    wrefresh(alert_window);
 

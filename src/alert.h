@@ -27,6 +27,9 @@
 
 #include <time.h>
 
+struct AlertArea;
+typedef struct AlertArea AlertArea;
+
 struct Alert {
    char *headline;
    char *description;
@@ -34,8 +37,15 @@ struct Alert {
 
    struct tm effective;
    struct tm expires;
+
+   int area_count;
+   AlertArea **areas;
 };
 typedef struct Alert Alert;
+
+struct AlertArea {
+   char *name;
+};
 
 /*
    free_alert(alert) Frees the memory allocted for the alert.
@@ -43,5 +53,12 @@ typedef struct Alert Alert;
       POST: Memory allocated for the alert and it's values is freed.
 */
 void free_alert(Alert *alert);
+
+/*
+   free_alert(alert) Frees the memory allocted for the alert.
+      PRE:  Valid alert pointer
+      POST: Memory allocated for the alert and it's values is freed.
+*/
+void free_alert_area(AlertArea *area);
 
 #endif

@@ -175,6 +175,32 @@ Alerts * load_alerts_from_json(json_value *json)
 
          free(effective);
          free(expires);
+
+         // Get alert areas
+         zlog_debug(alog, "Getting a list of all alert areas");
+
+         json_value *js_areas = json_object_value(js_info, "Areas");
+         if (!js_areas) continue;
+
+         alert->area_count = js_areas->u.array.length;
+         alert->areas = malloc(sizeof(AlertArea *) * alert->area_count);
+
+         for (int iii = 0; iii < alert->area_count; ++iii)
+         {
+            json_value *js_area = js_areas->u.array.values[iii];
+            if (!js_area) continue;
+
+            AlertArea *area = malloc(sizeof(AlertArea));
+            if (!area)
+            {
+               zlog_warn(alog, "Failed to allocate memory for AlertArea");
+               continue;
+            }// End of if
+
+            area->name = json_string_or_default(js_area, "Description", "");
+
+            alert->areas[iii] = area;
+         }// End of for
       }// End of for (ii)
    }// End of for (i)
 

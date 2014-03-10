@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include "log.h"
 
+// IMPLEMENTATION: See header for details
 void free_alert(Alert *alert)
 {
    if (!alert) return;
@@ -37,7 +38,29 @@ void free_alert(Alert *alert)
    free(alert->description);
    free(alert->issuer);
 
+   if (alert->areas)
+   {
+      for (int x = 0; x < alert->area_count; ++x)
+      {
+         free_alert_area(alert->areas[x]);
+      }// End of for
+   }// End of if
+
    free(alert);
+
+   zlog_debug(alog, "Exiting");
+}// End of free_alert method
+
+// IMPLEMENTATION: See header for details
+void free_alert_area(AlertArea *area)
+{
+   if (!area) return;
+
+   zlog_debug(alog, "Entering");
+
+   free(area->name);
+
+   free(area);
 
    zlog_debug(alog, "Exiting");
 }// End of free_alert method
