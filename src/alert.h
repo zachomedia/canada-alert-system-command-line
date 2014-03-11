@@ -53,14 +53,14 @@ struct AlertArea {
 /*
    free_alert(alert) Frees the memory allocted for the alert.
       PRE:  Valid alert pointer
-      POST: Memory allocated for the alert and it's values is freed.
+      POST: Memory allocated for the alert and its values is freed.
 */
 void free_alert(Alert *alert);
 
 /*
    free_alert_area(alert) Frees the memory allocted for the alert area.
       PRE:  Valid alert pointer
-      POST: Memory allocated for the alert area and it's values is freed.
+      POST: Memory allocated for the alert area and its values is freed.
 */
 void free_alert_area(AlertArea *area);
 
