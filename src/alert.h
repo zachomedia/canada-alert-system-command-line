@@ -45,6 +45,9 @@ typedef struct Alert Alert;
 
 struct AlertArea {
    char *name;
+
+   int geocode_count;
+   int *geocodes;
 };
 
 /*

@@ -59,6 +59,7 @@ void free_alert_area(AlertArea *area)
    zlog_debug(alog, "Entering");
 
    free(area->name);
+   free(area->geocodes);
 
    free(area);
 

@@ -191,16 +191,34 @@ Alerts * load_alerts_from_json(json_value *json)
             if (!js_area) continue;
 
             AlertArea *area = malloc(sizeof(AlertArea));
+
             if (!area)
             {
                zlog_warn(alog, "Failed to allocate memory for AlertArea");
                continue;
             }// End of if
 
+            alert->areas[iii] = area;
+
             area->name = json_string_or_default(js_area, "Description", "");
 
-            alert->areas[iii] = area;
-         }// End of for
+            json_value *js_geocodes = json_object_value(js_area, "Geocodes");
+            if (!js_geocodes) continue;
+
+            area->geocode_count = js_geocodes->u.array.length;
+            area->geocodes = calloc(area->geocode_count, sizeof(int));
+
+            if (!area->geocodes)
+            {
+               zlog_warn(alog, "Failed to allocate memory for geocodes");
+               continue;
+            }// End of if
+
+            for (int iiii = 0; iiii < area->geocode_count; ++iiii)
+            {
+               area->geocodes[iiii] = atoi(js_geocodes->u.array.values[iiii]->u.string.ptr);
+            }// End of for (iiii)
+         }// End of for (iii)
       }// End of for (ii)
    }// End of for (i)
 
