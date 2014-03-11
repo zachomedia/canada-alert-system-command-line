@@ -1,11 +1,8 @@
 Canada Alert System (CLI)
 ================================
 
-Command line client for the Canada Alert System
-
-Currently hard coded to load alerts from http://alerts.zacharyseguin.ca/alerts.json
+Command line client for the Canada Alert System (http://alerts.zacharyseguin.ca)
 
 ### TO-DO List
 
-- Show location alerts
-- Search (alert headline, location, etc.)
+- Filter (alert type, location, etc.)
