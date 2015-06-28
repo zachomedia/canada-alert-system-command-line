@@ -60,7 +60,7 @@ static bool keep_alert(json_value *js_alert)
 
    if (!js_alert) return false;
 
-   json_value *js_status = json_object_value(js_alert, "Status");
+   json_value *js_status = json_object_value(js_alert, "status");
    if (!js_status || strcmp(js_status->u.string.ptr, "Actual") != 0) return false;
 
    zlog_debug(alog, "Exiting");
@@ -78,8 +78,8 @@ static bool keep_alert_info(json_value *js_info)
 
    if (!js_info) return false;
 
-   json_value *js_language = json_object_value(js_info, "Language");
-   if (!js_language || strcmp(js_language->u.string.ptr, "fr-CA") == 0) return false;
+   json_value *js_language = json_object_value(js_info, "language");
+   if (!js_language || strcmp(js_language->u.string.ptr, "fr-EN") != -1) return false;
 
    zlog_debug(alog, "Exiting");
    return true;
@@ -89,6 +89,7 @@ static bool keep_alert_info(json_value *js_info)
 Alerts * load_alerts_from_json(json_value *json)
 {
    zlog_debug(alog, "Entering");
+   json = json_object_value(json, "alerts");
 
    if (!json || json->type != json_array)
    {
@@ -107,7 +108,7 @@ Alerts * load_alerts_from_json(json_value *json)
       json_value *js_alert = json->u.array.values[i];
       if (!keep_alert(js_alert)) continue;
 
-      json_value *js_information = json_object_value(js_alert, "Information");
+      json_value *js_information = json_object_value(js_alert, "infos");
       if (!js_information) continue;
 
       for (int ii = 0; ii < js_information->u.array.length; ++ii)
@@ -144,7 +145,7 @@ Alerts * load_alerts_from_json(json_value *json)
       json_value *js_alert = json->u.array.values[i];
       if (!keep_alert(js_alert)) continue;
 
-      json_value *js_information = json_object_value(js_alert, "Information");
+      json_value *js_information = json_object_value(js_alert, "infos");
       if (!js_information) continue;
 
       for (int ii = 0; ii < js_information->u.array.length; ++ii)
@@ -163,12 +164,13 @@ Alerts * load_alerts_from_json(json_value *json)
             return NULL;
          }// End of if
 
-         alert->headline = json_string_or_default(js_info, "Headline", "");
-         alert->description = json_string_or_default(js_info, "Description", "");
-         alert->issuer = json_string_or_default(js_info, "SenderName", "");
+         alert->headline = json_string_or_default(js_info, "headline", "");
+         alert->description = json_string_or_default(js_info, "description", "");
+         alert->instruction = json_string_or_default(js_info, "instruction", "");
+         alert->issuer = json_string_or_default(js_info, "sender_name", "");
 
-         char *effective = json_string_or_default(js_info, "Effective", "");
-         char *expires = json_string_or_default(js_info, "Expires", "");
+         char *effective = json_string_or_default(js_info, "effective", "");
+         char *expires = json_string_or_default(js_info, "expires", "");
 
          parse_time(effective, &alert->effective);
          parse_time(expires, &alert->expires);
@@ -179,7 +181,7 @@ Alerts * load_alerts_from_json(json_value *json)
          // Get alert areas
          zlog_debug(alog, "Getting a list of all alert areas");
 
-         json_value *js_areas = json_object_value(js_info, "Areas");
+         json_value *js_areas = json_object_value(js_info, "areas");
          if (!js_areas) continue;
 
          alert->area_count = js_areas->u.array.length;
@@ -200,12 +202,12 @@ Alerts * load_alerts_from_json(json_value *json)
 
             alert->areas[iii] = area;
 
-            area->name = json_string_or_default(js_area, "Description", "");
+            area->name = json_string_or_default(js_area, "description", "");
 
-            json_value *js_geocodes = json_object_value(js_area, "Geocodes");
+            json_value *js_geocodes = json_object_value(js_area, "geocodes");
             if (!js_geocodes) continue;
 
-            area->geocode_count = js_geocodes->u.array.length;
+            area->geocode_count = 0; //js_geocodes->u.array.length;
             area->geocodes = calloc(area->geocode_count, sizeof(int));
 
             if (!area->geocodes)
@@ -259,15 +261,21 @@ Alerts * load_alerts_from_json_file(FILE *file)
    }// End of if
 
    rewind(file);
-   fgets(contents, file_length, file);
+   fread(contents, file_length, file_length, file);
 
    // Parse the JSON
    zlog_info(alog, "Parsing JSON");
-   json = json_parse(contents, file_length);
+
+   printf("%s\n", contents);
+
+   char error[json_error_max] = { 0 };
+   json_settings settings = { 0 };
+   json = json_parse_ex(&settings, contents, file_length, error);
 
    if (!json)
    {
       zlog_warn(alog, "JSON Parse Error");
+      zlog_warn(alog, "%s", error);
       free(contents);
 
       return NULL;

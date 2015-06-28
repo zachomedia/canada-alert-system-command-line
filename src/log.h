@@ -22,10 +22,26 @@
    THE SOFTWARE.
 */
 
-#include <zlog.h>
+#include <stdio.h>
 
-extern int log_num;
-extern zlog_category_t *alog;
+#define DEBUG 0
+
+extern FILE *alog;
 
 void configure_log(void);
 void close_log(void);
+
+#define zlog_debug(a,b, args...) zlog("[DEBUG] " b "\n", ## args);
+#define zlog_warn(a,b, args...) zlog("[WARN] " b "\n", ## args);
+#define zlog_info(a,b, args...) zlog("[INFO] " b "\n", ## args);
+
+#if DEBUG
+   #define zlog(fmt, args...) { \
+         FILE *alog = fopen("alerts.log", "a"); \
+         fprintf(alog, "%s(%d) %s\n" fmt "\n", __FILE__, __LINE__, __func__, ## args); \
+         fclose(alog); \
+         fprintf(stderr, "%s(%d) %s\n" fmt "\n", __FILE__, __LINE__, __func__, ## args); \
+      }
+#else
+   #define zlog(fmt, args...)
+#endif

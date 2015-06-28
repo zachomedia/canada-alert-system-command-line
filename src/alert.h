@@ -33,6 +33,7 @@ typedef struct AlertArea AlertArea;
 struct Alert {
    char *headline;
    char *description;
+   char *instruction;
    char *issuer;
 
    struct tm effective;

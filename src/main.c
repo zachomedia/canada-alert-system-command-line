@@ -101,7 +101,7 @@ static void configure_alert_window(void)
       scrollok(alert_window, true);
    }// End of window
 
-   if (alerts->count == 0) return;
+   if (!alerts || alerts->count == 0) return;
 
    // Declare variables
    zlog_info(alog, "Showing alert #%d", active_alert);
@@ -145,7 +145,7 @@ static void configure_alert_window(void)
    wattroff(alert_window, A_BOLD);
 
    zlog_debug(alog, "Printing expires time");
-   wprintw(alert_window, ". Effective until ");
+   wprintw(alert_window, "\nEffective until ");
    wattron(alert_window, A_BOLD);
    strftime(tm, sizeof(tm) - 1, "%Y-%m-%d %H:%M", &alert->expires);
    wprintw(alert_window, "%s", tm);
@@ -157,13 +157,19 @@ static void configure_alert_window(void)
    for (int x = 0; x < alert->area_count; ++x)
    {
       if (x > 0) wprintw(alert_window, ", ");
+
+      wattron(alert_window, A_BOLD);
       wprintw(alert_window, "%s", alert->areas[x]->name);
+      wattroff(alert_window, A_BOLD);
    }// End of for
-   wprintw(alert_window, ".\n\n");
+   wprintw(alert_window, ".\n\n\n\n");
 
    zlog_debug(alog, "Printing description");
-   wattron(alert_window, A_BOLD);
    wprintw(alert_window, "%s\n\n", alert->description);
+
+   zlog_debug(alog, "Printing instruction");
+   wattron(alert_window, A_BOLD);
+   wprintw(alert_window, "%s\n\n", alert->instruction);
    wattroff(alert_window, A_BOLD);
 
    wrefresh(alert_window);
@@ -245,8 +251,12 @@ int main(void)
    configure_log();
 
    // Load current alerts
-   alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/alerts.json");
+   alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/api/alerts.json");
 
+   if (alerts)
+      printf("Alerts: %d\n", alerts->count);
+
+   // return -1;
    // Set up ncurses
    initscr();
    start_color();

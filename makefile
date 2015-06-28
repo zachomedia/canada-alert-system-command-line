@@ -5,8 +5,8 @@ BIN := bin
 CC := gcc
 C_FILES := $(wildcard $(SRC)/*.c)
 OBJ_FILES := $(addprefix $(OBJ)/,$(notdir $(C_FILES:.c=.o)))
-LD_FLAGS := -lm -L/usr/local/lib -lncurses -lzlog -lcurl
-CC_FLAGS := -Wall -g -I/usr/local/include -std=c99
+LD_FLAGS := -lm -L/usr/local/lib -lncurses -lcurl -g
+CC_FLAGS := -Wall -g -I/usr/local/include -std=c99 -g
 
 INSTALL := /usr/local/bin
 

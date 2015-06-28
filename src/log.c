@@ -24,16 +24,14 @@
 
 #include "log.h"
 
-int log_num;
-zlog_category_t *alog;
+FILE *alog;
 
 void configure_log(void)
 {
-   log_num = zlog_init("/etc/zlog.conf");
-   alog = zlog_get_category("alerts");
-}// End of configure_log method
+
+}
 
 void close_log(void)
 {
-   zlog_fini();
-}// End of close_log method
+
+}

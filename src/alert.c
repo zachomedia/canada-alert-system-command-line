@@ -36,6 +36,7 @@ void free_alert(Alert *alert)
 
    free(alert->headline);
    free(alert->description);
+   free(alert->instruction);
    free(alert->issuer);
 
    if (alert->areas)
