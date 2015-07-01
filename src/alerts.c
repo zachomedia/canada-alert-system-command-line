@@ -266,8 +266,6 @@ Alerts * load_alerts_from_json_file(FILE *file)
    // Parse the JSON
    zlog_info(alog, "Parsing JSON");
 
-   printf("%s\n", contents);
-
    char error[json_error_max] = { 0 };
    json_settings settings = { 0 };
    json = json_parse_ex(&settings, contents, file_length, error);

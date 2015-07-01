@@ -253,9 +253,6 @@ int main(void)
    // Load current alerts
    alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/api/alerts.json");
 
-   if (alerts)
-      printf("Alerts: %d\n", alerts->count);
-
    // return -1;
    // Set up ncurses
    initscr();
