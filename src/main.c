@@ -193,7 +193,7 @@ static void configure_stats_window(void)
    // Configure window
    wclear(stats_window);
 
-   wprintw(stats_window, "Canada Alert System");
+   wprintw(stats_window, "Alerts Canada");
 
    if (alerts->count > 0)
    {
@@ -235,7 +235,7 @@ static void configure_input_window(void)
 
 static void configure_windows(void)
 {
-   zlog_debug(alog, "Entering");
+   zlog_debug(alog, "Entering")
 
    getmaxyx(stdscr, winrows, wincols);
 
@@ -251,7 +251,7 @@ int main(void)
    configure_log();
 
    // Load current alerts
-   alerts = load_alerts_from_http_json_file("http://alerts.zacharyseguin.ca/api/alerts.json");
+   alerts = load_alerts_from_http_json_file("https://alerts.zacharyseguin.ca/api/alerts.json");
 
    // return -1;
    // Set up ncurses
